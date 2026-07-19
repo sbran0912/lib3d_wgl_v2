@@ -18,7 +18,7 @@ import * as wgl from "./lib-wgl.ts";
  * Gibt einen um `amount` (0..1) abgedunkelten Hex-Farbstring zurück.
  * amount=0 → unverändert, amount=1 → schwarz.
  */
-function darkenHex(hex: string, amount: number): string {
+export function darkenHex(hex: string, amount: number): string {
   let h = hex.replace("#", "");
   if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
   const r = parseInt(h.slice(0, 2), 16);

@@ -7,7 +7,7 @@
 
 import * as l3d from "./lib-3d.ts";
 import * as wgl from "./lib-wgl.ts";
-import { Solid } from "./lib-solids.ts";
+import { Solid, darkenHex } from "./lib-solids.ts";
 
 // ====================================================================
 // BODY
@@ -43,13 +43,21 @@ export class Body {
   static fogFar = 40;
   static fogMax = 0.6;
 
+  /**
+   * Körper-Nebel: ganzer Körper wird dunkler, je weiter er
+   * von der Kamera entfernt ist (absolute Kameratiefe).
+   */
+  static bodyFogNear = 100;
+  static bodyFogFar = 400;
+  static bodyFogMax = 0.5;
+
   constructor(solid: Solid, x: number, y: number, z: number) {
     this.solid = solid;
     this.pos = new l3d.Vec3(x, y, z);
     this.vel = new l3d.Vec3(0, 0, 0);
   }
 
-  /** Zeichnet den Body mit per-edge-Tiefennebel (positionsunabhängig). */
+  /** Zeichnet den Body mit Körper-Nebel + per-edge Tiefennebel. */
   draw(fov: number, view: l3d.Matrix4x4): void {
     const world = l3d.multMatrix(
       l3d.translateMatrix(this.pos.x, this.pos.y, this.pos.z),
@@ -57,11 +65,19 @@ export class Body {
     );
     wgl.strokeWidth(this.lineWidth);
 
-    // Körper-Zentrum in Kamerakoordinaten (als Referenz für relative Tiefe)
+    // Körper-Zentrum in Kamerakoordinaten
     const centerCam = this.pos.transform(view);
+    const depth = centerCam.z;
 
+    // 1. Körper-Nebel (absolute Tiefe) → Basis-Farbe abdunkeln
+    const bodyFog = depth > Body.bodyFogNear
+      ? Math.min(1, (depth - Body.bodyFogNear) / (Body.bodyFogFar - Body.bodyFogNear)) * Body.bodyFogMax
+      : 0;
+    const baseColor = darkenHex(this.color, bodyFog);
+
+    // 2. Per-edge-Nebel (relative Tiefe) → Solid.draw() dunkelt jede Kante einzeln
     this.solid.draw(fov, view, world, {
-      baseColor: this.color,
+      baseColor,
       near: Body.fogNear,
       far: Body.fogFar,
       max: Body.fogMax,

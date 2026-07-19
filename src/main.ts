@@ -25,7 +25,7 @@ const SCREEN_H = 600;
 const FOV = 1500;
 
 // Kamera
-const CAM_POS    = new l3d.Vec3(50, 40, -70);
+const CAM_POS    = new l3d.Vec3(50, 20, -70);
 const CAM_TARGET = new l3d.Vec3(0, 0, 0);
 const CAM_UP     = new l3d.Vec3(0, 1, 0);
 
@@ -106,7 +106,14 @@ function draw() {
   pyramid.rotX = time * 0.3;
   pyramid.rotY = time * 0.7;
 
-  // Kugel – Eigenrotation
+  // Kugel – Orbit um Pivot (anderer Radius + Höhe) + Eigenrotation
+  const sphereOrbitAngle = time * 0.5;
+  const sphereOrbitPos = l3d.rotateAround(
+    new l3d.Vec3(120, 30, 0),
+    pivot,
+    l3d.rotateMatrix(0, sphereOrbitAngle, 0),
+  );
+  sphere.pos = sphereOrbitPos;
   sphere.rotX = time * 0.5;
   sphere.rotY = time * 0.8;
   sphere.rotZ = time * 0.3;
