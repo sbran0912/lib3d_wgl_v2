@@ -37,22 +37,22 @@ const CAM_UP     = new l3d.Vec3(0, 1, 0);
 const grid = createGrid(600, 24);
 
 // -- Bodies --
-const box1    = new Body(createBox(30, 40, 50),     -60, 0, 80);
+const box1    = new Body(createBox(30, 40, 50), -60, 0, 80);
 box1.color    = "#ff6644";
 
-const box2    = new Body(createBox(30, 40, 50),     0, 0, 0);   // Orbit → Position wird pro Frame gesetzt
+const box2    = new Body(createBox(30, 40, 50), 0, 0, 0);   // Orbit → Position wird pro Frame gesetzt
 box2.color    = "#44aaff";
 
-const pyramid = new Body(createPyramid(60, 80),     70, 20, 60);
+const pyramid = new Body(createPyramid(60, 80), 70, 20, 60);
 pyramid.color = "#66ff88";
 
-const sphere  = new Body(createSphere(35),          130, 25, -200);
+const sphere  = new Body(createSphere(35), 130, 25, -200);
 sphere.color  = "#ff66cc";
 
 const allBodies = [box1, box2, pyramid, sphere];
 
 // ====================================================================
-// HILFE – Pivot / Orbit für box2
+// Pivot / Orbit für box2
 // ====================================================================
 
 const pivot = new l3d.Vec3(0, 0, 100);
