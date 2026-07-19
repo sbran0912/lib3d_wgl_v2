@@ -59,10 +59,13 @@ export class Body {
 
   /** Zeichnet den Body mit Körper-Nebel + per-edge Tiefennebel. */
   draw(fov: number, view: l3d.Matrix4x4): void {
-    const world = l3d.multMatrix(
-      l3d.translateMatrix(this.pos.x, this.pos.y, this.pos.z),
-      l3d.rotateMatrix(this.rotX, this.rotY, this.rotZ),
-    );
+    // Rotation überspringen wenn alle Winkel 0 sind
+    const world = (this.rotX === 0 && this.rotY === 0 && this.rotZ === 0)
+      ? l3d.translateMatrix(this.pos.x, this.pos.y, this.pos.z)
+      : l3d.multMatrix(
+          l3d.translateMatrix(this.pos.x, this.pos.y, this.pos.z),
+          l3d.rotateMatrix(this.rotX, this.rotY, this.rotZ),
+        );
     wgl.strokeWidth(this.lineWidth);
 
     // Körper-Zentrum in Kamerakoordinaten
