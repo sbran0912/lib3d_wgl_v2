@@ -1,16 +1,17 @@
 /**
- * main.ts  –  Demo für lib-3d + lib-solids
+ * main.ts  –  Demo mit Body-Klasse
  *
  * Zeigt:
  *   - Kamera-Perspektive via lookAtMatrix
- *   - World-Matrix für Position/Rotation von Objekten
- *   - Solid.draw() für Box, Pyramide, Grid
- *   - rotateAround() für Rotation um ein Pivot (animiert)
+ *   - Body.draw() statt manueller World-Matrix
+ *   - Animierte Position/Rotation über Body-Eigenschaften
+ *   - distanceTo() für Abstandsmessung zwischen Bodies
  */
 
 import * as wgl from "./lib-wgl.ts";
 import * as l3d from "./lib-3d.ts";
-import { Solid, createBox, createPyramid, createGrid } from "./lib-solids.ts";
+import { Solid, createBox, createPyramid, createGrid, createSphere } from "./lib-solids.ts";
+import { Body } from "./lib-body.ts";
 
 // ====================================================================
 // KONFIGURATION
@@ -23,23 +24,39 @@ const SCREEN_H = 600;
 // s = fov/(fov+z) → je größer fov, desto näher an 1.0
 const FOV = 1500;
 
-// Kamera – noch näher für 50 % mehr Bildfläche
-const CAM_POS    = new l3d.Vec3(50, 40, -70);    // nah dran
-const CAM_TARGET = new l3d.Vec3(0, 0, 0);        // Blick zur Szenen-Mitte
-const CAM_UP     = new l3d.Vec3(0, 1, 0);        // Y zeigt nach oben
+// Kamera
+const CAM_POS    = new l3d.Vec3(50, 40, -70);
+const CAM_TARGET = new l3d.Vec3(0, 0, 0);
+const CAM_UP     = new l3d.Vec3(0, 1, 0);
 
 // ====================================================================
 // SZENE AUFBAUEN
 // ====================================================================
 
-// -- Boden-Gitter (600×600 Einheiten, 24×24 Zellen) --
+// -- Boden-Gitter (unbewegt, bleibt Spezialfall) --
 const grid = createGrid(600, 24);
 
-// -- Box (30×40×50) --
-const box = createBox(30, 40, 50);
+// -- Bodies --
+const box1    = new Body(createBox(30, 40, 50),     -60, 0, 80);
+box1.color    = "#ff6644";
 
-// -- Pyramide (Basis 60, Höhe 80) --
-const pyramid = createPyramid(60, 80);
+const box2    = new Body(createBox(30, 40, 50),     0, 0, 0);   // Orbit → Position wird pro Frame gesetzt
+box2.color    = "#44aaff";
+
+const pyramid = new Body(createPyramid(60, 80),     70, 20, 60);
+pyramid.color = "#66ff88";
+
+const sphere  = new Body(createSphere(35),          130, 25, -200);
+sphere.color  = "#ff66cc";
+
+const allBodies = [box1, box2, pyramid, sphere];
+
+// ====================================================================
+// HILFE – Pivot / Orbit für box2
+// ====================================================================
+
+const pivot = new l3d.Vec3(0, 0, 100);
+const orbitRadius = 90;
 
 // ====================================================================
 // DRAW-SCHLEIFE
@@ -48,86 +65,64 @@ const pyramid = createPyramid(60, 80);
 let time = 0;
 
 function draw() {
-  time += 0.02; // ca. 60 fps → 1 Umdrehung ≈ 2.1 Sekunden
+  time += 0.02;
 
   // -- Hintergrund --
-  wgl.background(15, 15, 30);
+  wgl.background(40, 40, 40);
 
-  // -- View-Matrix (Kamera) – bleibt pro Frame gleich --
+  // -- View-Matrix --
   const view = l3d.lookAtMatrix(CAM_POS, CAM_TARGET, CAM_UP);
 
   // ================================================================
-  // 1. BODEN-GITTER (unbewegt, im Ursprung)
+  // 1. BODEN-GITTER
   // ================================================================
-  wgl.strokeColor("#334");
+  wgl.strokeColor("#445");
   wgl.strokeWidth(1);
   grid.draw(FOV, view, l3d.identityMatrix());
 
   // ================================================================
-  // 2. BOX – rotiert um ihr eigenes Zentrum (Pivot = Objektposition)
+  // 2. BODY-ZUSTÄNDE AKTUALISIEREN
   // ================================================================
-  const boxPos = new l3d.Vec3(-60, 0, 80);
-  const boxRot = l3d.rotateMatrix(time * 0.6, time * 0.4, 0);
 
-  // World-Matrix aus Translation × Rotation (zuerst rotieren, dann verschieben)
-  const boxWorld = l3d.multMatrix(
-    l3d.translateMatrix(boxPos.x, boxPos.y, boxPos.z),
-    boxRot,
-  );
+  // Box #1 – Eigenrotation
+  box1.rotX = time * 0.6;
+  box1.rotY = time * 0.4;
 
-  wgl.strokeColor("#ff6644");
-  wgl.strokeWidth(2);
-  box.draw(FOV, view, boxWorld);
-
-  // ================================================================
-  // 3. BOX #2 – Rotation um einen äußeren Pivot-Punkt (Sonnensystem-Effekt)
-  //    Demonstriert rotateAround() auf der Ebene der Vertices.
-  // ================================================================
-  const pivot = new l3d.Vec3(0, 0, 100);
+  // Box #2 – Orbit um Pivot + Eigenrotation
   const orbitAngle = time * 0.8;
-  const orbitRadius = 90;
-
-  // Position auf der Kreisbahn berechnen (um die Y-Achse)
-  const orbitRot = l3d.rotateMatrix(0, orbitAngle, 0);
   const orbitPos = l3d.rotateAround(
     new l3d.Vec3(orbitRadius, 0, 0),
     pivot,
-    orbitRot,
+    l3d.rotateMatrix(0, orbitAngle, 0),
   );
+  box2.pos = orbitPos;
+  box2.rotY = time * 1.5;
 
-  // Box rotiert zusätzlich um die eigene Achse
-  const box2Rot = l3d.rotateMatrix(0, time * 1.5, 0);
-  const box2World = l3d.multMatrix(
-    l3d.translateMatrix(orbitPos.x, orbitPos.y, orbitPos.z),
-    box2Rot,
-  );
+  // Pyramide – Eigenrotation
+  pyramid.rotX = time * 0.3;
+  pyramid.rotY = time * 0.7;
 
-  wgl.strokeColor("#44aaff");
-  wgl.strokeWidth(2);
-  box.draw(FOV, view, box2World);
-
-  // ================================================================
-  // 4. PYRAMIDE – über dem Boden, leicht schwebend
-  // ================================================================
-  const pyrPos = new l3d.Vec3(70, 20, 60);
-  const pyrRot = l3d.rotateMatrix(time * 0.3, time * 0.7, 0);
-  const pyrWorld = l3d.multMatrix(
-    l3d.translateMatrix(pyrPos.x, pyrPos.y, pyrPos.z),
-    pyrRot,
-  );
-
-  wgl.strokeColor("#66ff88");
-  wgl.strokeWidth(2);
-  pyramid.draw(FOV, view, pyrWorld);
+  // Kugel – Eigenrotation
+  sphere.rotX = time * 0.5;
+  sphere.rotY = time * 0.8;
+  sphere.rotZ = time * 0.3;
 
   // ================================================================
-  // 5. INFO-TEXT (optional, über wgl-Primitive)
+  // 3. ALLE BODYS ZEICHNEN
   // ================================================================
+
+  for (const b of allBodies) {
+    b.draw(FOV, view);
+  }
+
+  // ================================================================
+  // 4. INFO: Abstand zwischen box1 und box2
+  // ================================================================
+  const dist = box1.distanceTo(box2);
   wgl.strokeColor("#ffffff66");
   wgl.pointSize(3);
-  // Kleine Markierung für den Pivot-Punkt
   const pivotScreen = l3d.project(FOV, pivot.transform(view));
-  wgl.circle(pivotScreen.x, pivotScreen.y, 4, 0 /* stroke */, 16);
+  wgl.circle(pivotScreen.x, pivotScreen.y, 4, 0, 16);
 }
 
 // ====================================================================

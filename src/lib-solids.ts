@@ -167,3 +167,54 @@ export function createGrid(size: number, cells: number): Solid {
 
   return new Solid(vertices, edges);
 }
+
+/**
+ * Erzeugt eine Drahtgitter-Kugel (UV-Sphere).
+ *
+ * @param radius   Radius der Kugel
+ * @param slices   Anzahl Längslinien (Meridiane, z.B. 16)
+ * @param stacks   Anzahl Breitenlinien (Horizontalringe, z.B. 12)
+ * @returns Solid mit Gitternetz-Optik
+ */
+export function createSphere(radius: number, slices = 16, stacks = 12): Solid {
+  const V = (x: number, y: number, z: number) => new l3d.Vec3(x, y, z);
+
+  const vertices: l3d.Vec3[] = [];
+  const edges: [number, number][] = [];
+
+  // --- Vertices generieren ---
+  for (let i = 0; i <= stacks; i++) {
+    const theta = (i / stacks) * Math.PI;          // 0..PI (Pol zu Pol)
+    const y = radius * Math.cos(theta);
+    const r = radius * Math.sin(theta);
+
+    for (let j = 0; j <= slices; j++) {
+      const phi = (j / slices) * Math.PI * 2;      // 0..2PI
+      vertices.push(V(
+        r * Math.cos(phi),
+        y,
+        r * Math.sin(phi),
+      ));
+    }
+  }
+
+  // --- Kanten: Meridiane (vertikal, Pol zu Pol) ---
+  for (let j = 0; j <= slices; j++) {
+    for (let i = 0; i < stacks; i++) {
+      const a = i * (slices + 1) + j;
+      const b = (i + 1) * (slices + 1) + j;
+      edges.push([a, b]);
+    }
+  }
+
+  // --- Kanten: Breitenringe (horizontal, Ring für Ring) ---
+  for (let i = 0; i <= stacks; i++) {
+    for (let j = 0; j < slices; j++) {
+      const a = i * (slices + 1) + j;
+      const b = i * (slices + 1) + j + 1;
+      edges.push([a, b]);
+    }
+  }
+
+  return new Solid(vertices, edges);
+}
