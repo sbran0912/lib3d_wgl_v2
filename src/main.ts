@@ -38,16 +38,20 @@ const grid = createGrid(600, 24);
 
 // -- Bodies --
 const box1    = new Body(createBox(30, 40, 50), -60, 0, 80);
-box1.color    = "#ff6644";
+box1.color     = "#ff6644";
+box1.lineWidth = 1;
 
 const box2    = new Body(createBox(30, 40, 50), 0, 0, 0);   // Orbit → Position wird pro Frame gesetzt
-box2.color    = "#44aaff";
+box2.color     = "#44aaff";
+box2.lineWidth = 1;
 
 const pyramid = new Body(createPyramid(60, 80), 70, 20, 60);
-pyramid.color = "#66ff88";
+pyramid.color  = "#66ff88";
+pyramid.lineWidth = 1;
 
-const sphere  = new Body(createSphere(35), 130, 25, -200);
-sphere.color  = "#ff66cc";
+const sphere  = new Body(createSphere(35, 12, 9), 130, 25, -200);
+sphere.color   = "#ff66cc";
+sphere.lineWidth = 1;
 
 const allBodies = [box1, box2, pyramid, sphere];
 

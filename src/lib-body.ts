@@ -32,21 +32,41 @@ export class Body {
   color = "#ffffff";
   lineWidth = 1;
 
+  /**
+   * Per-edge-Tiefennebel: hintere Kanten werden dunkler,
+   * unabhängig von der Position des Körpers.
+   *   near = Abstand hinter dem Mittelzentrum (beginnende Abdunklung)
+   *   far  = Abstand hinter dem Mittelzentrum (max. Abdunklung)
+   *   max  = max. Abdunklung (0 = kein Effekt, 1 = schwarz)
+   */
+  static fogNear = 0;
+  static fogFar = 40;
+  static fogMax = 0.6;
+
   constructor(solid: Solid, x: number, y: number, z: number) {
     this.solid = solid;
     this.pos = new l3d.Vec3(x, y, z);
     this.vel = new l3d.Vec3(0, 0, 0);
   }
 
-  /** Zeichnet den Body mit seiner World-Matrix. */
+  /** Zeichnet den Body mit per-edge-Tiefennebel (positionsunabhängig). */
   draw(fov: number, view: l3d.Matrix4x4): void {
     const world = l3d.multMatrix(
       l3d.translateMatrix(this.pos.x, this.pos.y, this.pos.z),
       l3d.rotateMatrix(this.rotX, this.rotY, this.rotZ),
     );
-    wgl.strokeColor(this.color);
     wgl.strokeWidth(this.lineWidth);
-    this.solid.draw(fov, view, world);
+
+    // Körper-Zentrum in Kamerakoordinaten (als Referenz für relative Tiefe)
+    const centerCam = this.pos.transform(view);
+
+    this.solid.draw(fov, view, world, {
+      baseColor: this.color,
+      near: Body.fogNear,
+      far: Body.fogFar,
+      max: Body.fogMax,
+      centerDepth: centerCam.z,
+    });
   }
 
   /** Distanz zu einem anderen Body (Mittelpunkt zu Mittelpunkt). */

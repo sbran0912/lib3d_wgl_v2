@@ -11,6 +11,24 @@ import * as l3d from "./lib-3d.ts";
 import * as wgl from "./lib-wgl.ts";
 
 // ====================================================================
+// HILFE – Hex-Farbe abdunkeln
+// ====================================================================
+
+/**
+ * Gibt einen um `amount` (0..1) abgedunkelten Hex-Farbstring zurück.
+ * amount=0 → unverändert, amount=1 → schwarz.
+ */
+function darkenHex(hex: string, amount: number): string {
+  let h = hex.replace("#", "");
+  if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  const f = 1 - amount;
+  return `#${(r*f|0).toString(16).padStart(2,"0")}${(g*f|0).toString(16).padStart(2,"0")}${(b*f|0).toString(16).padStart(2,"0")}`;
+}
+
+// ====================================================================
 // SOLID – Ein 3D-Drahtgitter-Objekt
 // ====================================================================
 
@@ -37,20 +55,44 @@ export class Solid {
    * @param fov   Field-of-View (für Projektion, z.B. 300)
    * @param view  View-Matrix (Kamera, z.B. von lookAtMatrix)
    * @param world World-Matrix (Position/Rotation des Objekts im Raum)
+   * @param fog   Optionales per-edge-Fog: { baseColor, near, far, max, centerDepth? }
+   *              Jede Kante wird einzeln abgedunkelt, basierend auf ihrer
+   *              mittleren Tiefe (absolut in Kamerakoordinaten, oder relativ
+   *              zu centerDepth falls angegeben).
    */
-  draw(fov: number, view: l3d.Matrix4x4, world: l3d.Matrix4x4): void {
+  draw(
+    fov: number,
+    view: l3d.Matrix4x4,
+    world: l3d.Matrix4x4,
+    fog?: { baseColor: string; near: number; far: number; max: number; centerDepth?: number },
+  ): void {
     // 1. Kombinierte view × world-Matrix (einmal berechnen)
     const vw = l3d.multMatrix(view, world);
 
-    // 2. Alle Vertices → Kamerakoordinaten → 2D projizieren
-    const projected = this.vertices.map((v) =>
-      l3d.project(fov, v.transform(vw)),
-    );
+    // 2. Alle Vertices → Kamerakoordinaten projizieren + Tiefe merken
+    const projected = this.vertices.map((v) => {
+      const cam = v.transform(vw);
+      const screen = l3d.project(fov, cam);
+      return { x: screen.x, y: screen.y, depth: cam.z };
+    });
 
-    // 3. Kanten zeichnen (mit Projektion auf dem Bildschirm)
+    // 3. Kanten zeichnen (mit per-edge Fog falls gewünscht)
     for (const [i, j] of this.edges) {
       const a = projected[i];
       const b = projected[j];
+
+      if (fog) {
+        const avgDepth = (a.depth + b.depth) / 2;
+        // relative Tiefe zum Körperzentrum (wenn angegeben)
+        const relDepth = fog.centerDepth !== undefined
+          ? avgDepth - fog.centerDepth
+          : avgDepth;
+        const fogAmount = relDepth > fog.near
+          ? Math.min(1, (relDepth - fog.near) / (fog.far - fog.near)) * fog.max
+          : 0;
+        wgl.strokeColor(darkenHex(fog.baseColor, fogAmount));
+      }
+
       wgl.line(a.x, a.y, b.x, b.y);
     }
   }
