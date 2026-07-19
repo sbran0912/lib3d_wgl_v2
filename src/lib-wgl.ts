@@ -166,10 +166,21 @@ function createProgram(vertSrc: string, fragSrc: string): WebGLProgram {
 
 /** Setzt Shader-Uniforms aus dem aktuellen Zustand */
 function applyUniforms(cx: number, cy: number, radius: number, useStroke = false) {
-  const col  = useStroke ? state.stroke : state.fill;
-  const mode = state.effect === "flat"     ? 0
-             : state.effect === "gradient" ? 1
-             :                               2;   // pulse
+  let col: ColorState;
+  if (useStroke) {
+    col = state.stroke;
+  } else {
+    col = state.fill;
+  }
+
+  let mode: number;
+  if (state.effect === "flat") {
+    mode = 0;
+  } else if (state.effect === "gradient") {
+    mode = 1;
+  } else {
+    mode = 2;   // pulse
+  }
   gl.uniform1i(locMode,   mode);
   gl.uniform4f(locColor,  col.r, col.g, col.b, col.a);
   gl.uniform4f(locColor2, state.grad2.r, state.grad2.g, state.grad2.b, state.grad2.a);

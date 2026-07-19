@@ -59,13 +59,14 @@ export class Body {
 
   /** Zeichnet den Body mit Körper-Nebel + per-edge Tiefennebel. */
   draw(fov: number, view: l3d.Matrix4x4): void {
-    // Rotation überspringen wenn alle Winkel 0 sind
-    const world = (this.rotX === 0 && this.rotY === 0 && this.rotZ === 0)
-      ? l3d.translateMatrix(this.pos.x, this.pos.y, this.pos.z)
-      : l3d.multMatrix(
-          l3d.translateMatrix(this.pos.x, this.pos.y, this.pos.z),
-          l3d.rotateMatrix(this.rotX, this.rotY, this.rotZ),
-        );
+    // World-Matrix bauen (Rotation überspringen wenn alle Winkel 0 sind)
+    const t = l3d.translateMatrix(this.pos.x, this.pos.y, this.pos.z);
+    let world: l3d.Matrix4x4;
+    if (this.rotX === 0 && this.rotY === 0 && this.rotZ === 0) {
+      world = t;
+    } else {
+      world = l3d.multMatrix(t, l3d.rotateMatrix(this.rotX, this.rotY, this.rotZ));
+    }
     wgl.strokeWidth(this.lineWidth);
 
     // Körper-Zentrum in Kamerakoordinaten
@@ -73,9 +74,11 @@ export class Body {
     const depth = centerCam.z;
 
     // 1. Körper-Nebel (absolute Tiefe) → Basis-Farbe abdunkeln
-    const bodyFog = depth > Body.bodyFogNear
-      ? Math.min(1, (depth - Body.bodyFogNear) / (Body.bodyFogFar - Body.bodyFogNear)) * Body.bodyFogMax
-      : 0;
+    let bodyFog = 0;
+    if (depth > Body.bodyFogNear) {
+      const t = Math.min(1, (depth - Body.bodyFogNear) / (Body.bodyFogFar - Body.bodyFogNear));
+      bodyFog = t * Body.bodyFogMax;
+    }
     const baseColor = darkenHex(this.color, bodyFog);
 
     // 2. Per-edge-Nebel (relative Tiefe) → Solid.draw() dunkelt jede Kante einzeln

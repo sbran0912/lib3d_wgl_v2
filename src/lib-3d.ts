@@ -70,7 +70,8 @@ export class Vec3 {
   /** Normalisierung – Einheitsvektor (Länge 1). Nullvektor bleibt null. */
   normalize(): Vec3 {
     const len = this.length();
-    return len === 0 ? new Vec3(0, 0, 0) : this.scale(1 / len);
+    if (len === 0) return new Vec3(0, 0, 0);
+    return this.scale(1 / len);
   }
 
   /** Lineare Interpolation: this + (v - this) * t  (t = 0 → this, t = 1 → v) */

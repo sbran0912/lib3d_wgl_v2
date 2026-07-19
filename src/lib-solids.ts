@@ -84,12 +84,15 @@ export class Solid {
       if (fog) {
         const avgDepth = (a.depth + b.depth) / 2;
         // relative Tiefe zum Körperzentrum (wenn angegeben)
-        const relDepth = fog.centerDepth !== undefined
-          ? avgDepth - fog.centerDepth
-          : avgDepth;
-        const fogAmount = relDepth > fog.near
-          ? Math.min(1, (relDepth - fog.near) / (fog.far - fog.near)) * fog.max
-          : 0;
+        let relDepth = avgDepth;
+        if (fog.centerDepth !== undefined) {
+          relDepth = avgDepth - fog.centerDepth;
+        }
+        let fogAmount = 0;
+        if (relDepth > fog.near) {
+          const t = Math.min(1, (relDepth - fog.near) / (fog.far - fog.near));
+          fogAmount = t * fog.max;
+        }
         wgl.strokeColor(darkenHex(fog.baseColor, fogAmount));
       }
 
