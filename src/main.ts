@@ -18,19 +18,22 @@ import { Solid, createBox, createPyramid, createGrid } from "./lib-solids.ts";
 
 const SCREEN_W = 800;
 const SCREEN_H = 600;
-const FOV = 400;
 
-// Kamera – Position/Winkel einfach durch Ändern von CAM_POS justieren
-const CAM_POS    = new l3d.Vec3(200, 120, -250); // Kamera von rechts oben
-const CAM_TARGET = new l3d.Vec3(0, 0, 100);      // Blick zur Szenen-Mitte
+// FOV: größer = mehr Zoom (wie längere Brennweite)
+// s = fov/(fov+z) → je größer fov, desto näher an 1.0
+const FOV = 1500;
+
+// Kamera – noch näher für 50 % mehr Bildfläche
+const CAM_POS    = new l3d.Vec3(50, 40, -70);    // nah dran
+const CAM_TARGET = new l3d.Vec3(0, 0, 0);        // Blick zur Szenen-Mitte
 const CAM_UP     = new l3d.Vec3(0, 1, 0);        // Y zeigt nach oben
 
 // ====================================================================
 // SZENE AUFBAUEN
 // ====================================================================
 
-// -- Boden-Gitter (100×100 Einheiten, 10×10 Zellen) --
-const grid = createGrid(200, 10);
+// -- Boden-Gitter (600×600 Einheiten, 24×24 Zellen) --
+const grid = createGrid(600, 24);
 
 // -- Box (30×40×50) --
 const box = createBox(30, 40, 50);
